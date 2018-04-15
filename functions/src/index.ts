@@ -42,7 +42,7 @@ export const newImage = functions.https.onRequest((request, response) => {
   //const tempLocalFile = 'fractastic/examples/julia1.png';
   console.log('making', tempLocalFilePpm);
 
-  return spawn('./fractastic', ['J', '200', '200', '-2', '2', '-2', '2', '1000', '1', '-0.4', '0.6', '2>' , `${tempLocalFilePpm}`], { capture: [ 'stdout', 'stderr' ]})
+  return spawn('./fractastic/fractastic', ['J', `${IMAGE_WIDTH}`, `${IMAGE_HEIGHT}`, '-2', '2', '-2', '2', '1000', '1', '-0.4', '0.6', '2>' , `${tempLocalFilePpm}`], { capture: [ 'stdout', 'stderr' ]})
   .then(function (result) {
     console.log('[spawn] stdout: ', result.stdout.toString());
     return bucket.upload(tempLocalFilePpm, {destination: '/test/julia1.ppm', metadata: metadata}).then(() => {
@@ -54,6 +54,8 @@ export const newImage = functions.https.onRequest((request, response) => {
   })
   .catch(function (err) {
     console.error('[spawn] err: ', err);
+    console.error('[spawn] err.stderr: ', err.stderr);
+    console.error('[spawn] err.stdout: ', err.stdout);
   });
 
 
