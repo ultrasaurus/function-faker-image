@@ -1,8 +1,11 @@
 import * as functions from 'firebase-functions';
 
 import * as admin from 'firebase-admin';
-//import * as Storage from '@google-cloud/storage';
 import Storage = require('@google-cloud/storage');
+const spawn = require('child-process-promise').spawn;
+
+const IMAGE_WIDTH = 600;
+const IMAGE_HEIGHT = 400;
 
 admin.initializeApp(functions.config().firebase);
 
@@ -14,15 +17,39 @@ function getConfig() {
 
 export const newImage = functions.https.onRequest((request, response) => {
   const config = getConfig();
+  console.log('got config');
   const storage = Storage({
     projectId: config.projectId,
     keyFilename: 'storage-credential.json'
   });
+
+  console.log('Storate init complete');
   const bucket = storage.bucket(config.storage.bucket);
+  console.log('Storate bucket', bucket);
+
+  const metadata = {
+    contentType: 'image/png',
+    // To enable Client-side caching you can set the Cache-Control headers here. Uncomment below.
+    // 'Cache-Control': 'public,max-age=3600',
+  };
+
+  const tempLocalFile = 'fractastic/examples/julia1.png';
+  console.log('checking', tempLocalFile);
+
+  return spawn('ls', ['.'], { capture: [ 'stdout', 'stderr' ]})
+  .then(function (result) {
+      console.log('[spawn] stdout: ', result.stdout.toString());
+  })
+  .then(() => {
+    return bucket.upload(tempLocalFile, {destination: '/test/julia1.png', metadata: metadata}).then(() => {
+      return response.send("Ok!");
+    });
+  })
+  .catch(function (err) {
+    console.error('err: ', err);
+  });
 
 
-  console.log('service account =', config.storage.credential)
-  response.send("Ok!");
  });
 
 // // Start writing Firebase Functions
