@@ -3,6 +3,8 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import Storage = require('@google-cloud/storage');
 const spawn = require('child-process-promise').spawn;
+const os = require('os');
+const path = require('path');
 
 const IMAGE_WIDTH = 600;
 const IMAGE_HEIGHT = 400;
@@ -33,20 +35,25 @@ export const newImage = functions.https.onRequest((request, response) => {
     // 'Cache-Control': 'public,max-age=3600',
   };
 
-  const tempLocalFile = 'fractastic/examples/julia1.png';
-  console.log('checking', tempLocalFile);
+  let filePath = 'test-julia';
+  const tempLocalFilePng = path.join(os.tmpdir(), filePath + '.png');
+  const tempLocalFilePpm = path.join(os.tmpdir(), filePath + '.ppm');
 
-  return spawn('ls', ['.'], { capture: [ 'stdout', 'stderr' ]})
+  //const tempLocalFile = 'fractastic/examples/julia1.png';
+  console.log('making', tempLocalFilePpm);
+
+  return spawn('./fractastic', ['J', '200', '200', '-2', '2', '-2', '2', '1000', '1', '-0.4', '0.6', '2>' , `${tempLocalFilePpm}`], { capture: [ 'stdout', 'stderr' ]})
   .then(function (result) {
-      console.log('[spawn] stdout: ', result.stdout.toString());
-  })
-  .then(() => {
-    return bucket.upload(tempLocalFile, {destination: '/test/julia1.png', metadata: metadata}).then(() => {
+    console.log('[spawn] stdout: ', result.stdout.toString());
+    return bucket.upload(tempLocalFilePpm, {destination: '/test/julia1.ppm', metadata: metadata}).then(() => {
       return response.send("Ok!");
+    })
+    .catch(function (err) {
+      console.error('[bucket.upload] err: ', err);
     });
   })
   .catch(function (err) {
-    console.error('err: ', err);
+    console.error('[spawn] err: ', err);
   });
 
 
