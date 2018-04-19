@@ -6,6 +6,15 @@ const path = require('path');
 
 const IMAGE_WIDTH = 600;
 const IMAGE_HEIGHT = 400;
+const X_MIN=-2.0
+const X_MAX=2.0
+const Y_MIN=-2.0
+const Y_MAX=2.0
+// function f(z) = zd + c
+const CRE=-0.4 // the real component of the complex parameter c
+const CIM=0.6 // the imaginary component of the complex parameter c
+const D=2   //  the real parameter d
+const C=10 // color_multiplier
 
 
 export class ImageMaker {
@@ -23,15 +32,19 @@ export class ImageMaker {
     console.log('Storate bucket', this.bucket);
   };
 
-  make():Promise<string> {
+  // x_min:number = X_MIN,
+  // x_max:number = X_MAX
 
+  make(options:any):Promise<string> {
+    let d = parseInt(options['d']) || 3;
+    console.log('d=', d);
     const metadata = {
       contentType: 'image/png',
       // TODO: enable Client-side caching you can set the Cache-Control headers here. Uncomment below.
       // 'Cache-Control': 'public,max-age=3600',
     };
 
-    let filePath = 'test-julia2';
+    let filePath  = `julia_${d}`;
     const tempLocalFilePng = path.join(os.tmpdir(), filePath + '.png');
     const tempLocalFilePpm = path.join(os.tmpdir(), filePath + '.ppm');
 
@@ -44,7 +57,7 @@ export class ImageMaker {
       ['J', `${IMAGE_WIDTH}`, `${IMAGE_HEIGHT}`,
        '-2', '2', '-2', '2',
        '1000', '1',
-       '-0.4', '0.6', '2'],
+       '-0.4', '0.6', d],
       { capture: [ 'stdout', 'stderr' ]})
     .then((result) => {
       console.log('fractastic completed without error');

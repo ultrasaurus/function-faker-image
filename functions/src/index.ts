@@ -12,20 +12,22 @@ function getConfig() {
    return config;
 }
 
-
-export const newImage = functions.https.onRequest((request, response) => {
+function generateImage(options:any):Promise<string> {
   const config = getConfig();
   console.log('got config');
 
   const bucketName =  config['storage'].bucket as string;
   let fakeImage = new ImageMaker(config['projectId'], bucketName);
 
-  return fakeImage.make().then((result) => {
+  return fakeImage.make(options);
+}
+
+export const newImage = functions.https.onRequest((request, response) => {
+  return generateImage({}).then((result) => {
     console.log('fakeImage.make result', result);
     response.send(result);
   })
-
- });
+});
 
 // // Start writing Firebase Functions
 // // https://firebase.google.com/docs/functions/typescript
@@ -75,4 +77,25 @@ export let addFake = functions.https.onRequest((req, res) => {
   });
 });
 
+export let addFakePoster = functions.https.onRequest((req, res) => {
+  console.log('addFakePoster query', req.query);
+  let imageOptions = {}
+  //imageOptions['d'] = req.query['d'];
+  let obj = {};
+  const noun = faker.company.bsNoun();
+  const verb = faker.company.bsBuzz();
+  const adjective = faker.company.bsAdjective();
+  obj['message'] = `${verb} ${adjective} ${noun}`;
+  obj['color'] = 'black';
+  obj['topic'] = noun;
+
+  return generateImage(imageOptions).then((imgResult) => {
+    console.log('fakeImage.make result', imgResult);
+    return addToCollection(obj).then(result => {
+      // Send back a message that we've succesfully written the message
+      res.json(result);
+    });
+  })
+
+});
 
