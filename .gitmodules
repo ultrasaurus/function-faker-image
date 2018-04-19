@@ -1,0 +1,3 @@
+[submodule "functions/fractastic"]
+	path = functions/fractastic
+	url = git@github.com:ultrasaurus/fractastic.git
