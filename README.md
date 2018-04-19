@@ -11,7 +11,10 @@ sequence below to *your* project id.
 PROJECT_ID=function-faker-image
 ```
 
-Create a service account for writing to Google Cloud Storage:
+Create a service account for writing to Google Cloud Storage
+It will need `Storge Object Admin` access to allow overwriting files -- create
+as well as delete.
+
 open https://pantheon.corp.google.com/apis/credentials/serviceaccountkey?project=$PROJECT_ID
 
 save in json format: functions/storage-credential.json
