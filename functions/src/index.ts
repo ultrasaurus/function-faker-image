@@ -1,7 +1,9 @@
 import * as functions from 'firebase-functions';
+import Storage = require('@google-cloud/storage');
 
 import * as admin from 'firebase-admin';
-import Storage = require('@google-cloud/storage');
+import {ImageMaker} from './image-maker';
+
 const spawn = require('child-process-promise').spawn;
 const fs = require('fs');
 const os = require('os');
@@ -18,13 +20,20 @@ function getConfig() {
    return config;
 }
 
+
 export const newImage = functions.https.onRequest((request, response) => {
   const config = getConfig();
   console.log('got config');
-  const storage = Storage({
+
+  let fakeImage = new ImageMaker(config['projectId']);
+  console.log('fakeImage.projectId', fakeImage.projectId);
+
+  let storageConfg = {
     projectId: config.projectId,
     keyFilename: 'storage-credential.json'
-  });
+  }
+
+  const storage = Storage(storageConfg);
 
   console.log('Storate init complete');
   const bucket = storage.bucket(config.storage.bucket);
