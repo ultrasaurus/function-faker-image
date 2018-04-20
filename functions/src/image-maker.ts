@@ -1,8 +1,8 @@
-import Storage = require('@google-cloud/storage');
-const spawn = require('child-process-promise').spawn;
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+import * as Storage from '@google-cloud/storage'
+import { spawn } from 'child-process-promise'
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
 
 const IMAGE_WIDTH = 600;
 const IMAGE_HEIGHT = 400;
@@ -19,8 +19,11 @@ const C=10 // color_multiplier
 
 export class ImageMaker {
   private bucket: any;
+  // TODO Accept an instance of Storage here instead the name of the bucket.
+  // We can let the admin SDK automatically initialize the Storage SDK with
+  // default project credentials.
   constructor(projectId: string, bucketName: string) {
-    let storageConfg = {
+    const storageConfg = {
       projectId: projectId,
       keyFilename: 'storage-credential.json'
     }
@@ -35,8 +38,8 @@ export class ImageMaker {
   // x_min:number = X_MIN,
   // x_max:number = X_MAX
 
-  make(options:any):Promise<string> {
-    let d = parseInt(options['d']) || 3;
+  make(options: any): Promise<string> {
+    const d = parseInt(options['d']) || 3;
     console.log('d=', d);
     const metadata = {
       contentType: 'image/png',
@@ -44,7 +47,7 @@ export class ImageMaker {
       // 'Cache-Control': 'public,max-age=3600',
     };
 
-    let filePath  = `julia_${d}`;
+    const filePath  = `julia_${d}`;
     const tempLocalFilePng = path.join(os.tmpdir(), filePath + '.png');
     const tempLocalFilePpm = path.join(os.tmpdir(), filePath + '.ppm');
 
@@ -53,11 +56,14 @@ export class ImageMaker {
 
     // `${tempLocalFilePpm}`
     const pemFile = fs.createWriteStream(tempLocalFilePpm);
-    return spawn('./fractastic/fractastic',
-      ['J', `${IMAGE_WIDTH}`, `${IMAGE_HEIGHT}`,
-       '-2', '2', '-2', '2',
-       '1000', '1',
-       '-0.4', '0.6', d],
+    const fractasticArgs = [
+      'J', `${IMAGE_WIDTH}`, `${IMAGE_HEIGHT}`,
+      '-2', '2', '-2', '2',
+      '1000', '1',
+      '-0.4', '0.6', String(d)
+    ]
+
+    return spawn('./fractastic/fractastic', fractasticArgs,
       { capture: [ 'stdout', 'stderr' ]})
     .then((result) => {
       console.log('fractastic completed without error');
