@@ -33,6 +33,7 @@ cd function-faker-image
 firebase functions:config:set project.id=$PROJECT_ID
 firebase functions:config:set storage.bucket=$PROJECT_ID.appspot.com
 cd functions
+npm install
 npm run build
 firebase deploy --only functions
 curl https://us-central1-$PROJECT_ID.cloudfunctions.net/newImage
