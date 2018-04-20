@@ -3,3 +3,4 @@ firebase-debug.log
 functions/lib/
 *credential.json
 .vscode
+.firebaserc
