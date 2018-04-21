@@ -9,6 +9,7 @@ sequence below to *your* project id.
 
 ```
 PROJECT_ID=function-faker-image
+firebase use --add $PROJECT_ID
 ```
 
 Create a service account for writing to Google Cloud Storage
@@ -30,7 +31,6 @@ cd function-faker-image
 ```
 
 ```
-firebase functions:config:set project.id=$PROJECT_ID
 firebase functions:config:set storage.bucket=$PROJECT_ID.appspot.com
 cd functions
 npm install
