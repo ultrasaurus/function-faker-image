@@ -90,7 +90,7 @@ export const addFake = functions.https.onRequest(async (req, res) => {
 export const addFakePoster = functions.https.onRequest(async (req, res) => {
   console.log('addFakePoster query', req.query);
   const imageOptions = {}
-  //imageOptions['d'] = req.query['d'];
+  imageOptions['d'] = req.query['d'];
   const noun = faker.company.bsNoun();
   const verb = faker.company.bsBuzz();
   const adjective = faker.company.bsAdjective();
@@ -101,8 +101,9 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
   };
 
   try {
-    const imgResult = await generateImage(imageOptions);
-    console.log('fakeImage.make result', imgResult);
+    const imageResult = await generateImage(imageOptions);
+    console.log('fakeImage.make result:', imageResult);
+    obj['path'] = imageResult['path'];
     const result = await addToCollection(obj);
     res.json(result);
   }

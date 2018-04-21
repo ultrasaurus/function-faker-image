@@ -4,8 +4,10 @@
 
 ## Dev Setup
 
-Create a Firebase project and set up billing, set PROJECT_ID in command-line
-sequence below to *your* project id.
+Create a Firebase project and
+1. set up billing
+2. Enable Firestore (in Database section) & Storage
+3. set PROJECT_ID in command-line sequence below to *your* project id.
 
 ```
 PROJECT_ID=function-faker-image
@@ -36,7 +38,9 @@ cd functions
 npm install
 npm run build
 firebase deploy --only functions
-curl https://us-central1-$PROJECT_ID.cloudfunctions.net/newImage
+curl https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster
+
+curl https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster?d=5
 
 # to only deploy a single function
 firebase deploy --only functions:newImage

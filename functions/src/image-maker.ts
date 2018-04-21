@@ -47,10 +47,10 @@ export class ImageMaker {
       // 'Cache-Control': 'public,max-age=3600',
     };
 
-    const filePath  = `julia_${d}`;
-    const tempLocalFilePng = path.join(os.tmpdir(), filePath + '.png');
-    const tempLocalFilePpm = path.join(os.tmpdir(), filePath + '.ppm');
-
+    const fileName  = `julia_${d}`;
+    const tempLocalFilePng = path.join(os.tmpdir(), fileName + '.png');
+    const tempLocalFilePpm = path.join(os.tmpdir(), fileName + '.ppm');
+    const destBucketPath = `images/${fileName}`
     //const tempLocalFile = 'fractastic/examples/julia1.png';
     console.log('making', tempLocalFilePpm);
 
@@ -73,8 +73,8 @@ export class ImageMaker {
       return spawn('convert', [tempLocalFilePpm, tempLocalFilePng], { capture: [ 'stdout', 'stderr' ]})
       .then((convertResult) => {
         console.log('[spawn] stdout: ', convertResult.stdout.toString());
-        return this.bucket.upload(tempLocalFilePng, {destination: '/test/julia2.png', metadata: metadata}).then(() => {
-          return "Ok!";
+        return this.bucket.upload(tempLocalFilePng, {destination: destBucketPath, metadata: metadata}).then(() => {
+          return {path: destBucketPath};
         })
         .catch(function (err) {
           console.error('[bucket.upload] err: ', err);
