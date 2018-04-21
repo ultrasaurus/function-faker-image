@@ -14,10 +14,8 @@ function getConfig() {
   return config;
 }
 
-function generateImage(options: any): Promise<string> {
+function generateImage(options: any) {
   const config = getConfig();
-  console.log('got config');
-
   const bucketName =  config['storage'].bucket as string;
   const fakeImage = new ImageMaker(PROJECT_ID, bucketName);
   return fakeImage.make(options);
@@ -86,7 +84,11 @@ export const addFake = functions.https.onRequest(async (req, res) => {
   }
 });
 
-
+function randomPrice() {
+  // 5-25
+  const base_price = (Math.floor(Math.random() * 5) + 1)*5;
+  return base_price + 0.99
+}
 export const addFakePoster = functions.https.onRequest(async (req, res) => {
   console.log('addFakePoster query', req.query);
   const imageOptions = {}
@@ -101,11 +103,17 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
   };
 
   try {
-    const imageResult = await generateImage(imageOptions);
-    console.log('fakeImage.make result:', imageResult);
-    obj['path'] = imageResult['path'];
-    const result = await addToCollection(obj);
-    res.json(result);
+    const imageResults = await generateImage(imageOptions);
+    console.log('fakeImage.make results:', imageResults);
+
+    await Promise.all(imageResults.map(imageData => {
+      console.log('imageData:', imageData);
+      obj['path'] = imageData['path'];
+      obj['color'] = imageData['color'];
+      obj['price'] = randomPrice();
+      return addToCollection(obj);
+    }))
+    res.json(imageResults);
   }
   catch (e) {
     res.status(500).send(e)

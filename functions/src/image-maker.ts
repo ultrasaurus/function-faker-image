@@ -38,7 +38,7 @@ export class ImageMaker {
   // x_min:number = X_MIN,
   // x_max:number = X_MAX
 
-  make(options: any): Promise<string> {
+  make(options: any): Promise<Array<{ path: string, color: string }> > {
     const d = parseInt(options['d']) || 3;
     console.log('d=', d);
     const metadata = {
@@ -50,7 +50,8 @@ export class ImageMaker {
     const fileName  = `julia_${d}`;
     const tempLocalFilePng = path.join(os.tmpdir(), fileName + '.png');
     const tempLocalFilePpm = path.join(os.tmpdir(), fileName + '.ppm');
-    const destBucketPath = `images/${fileName}`
+    const bucketRoot = "images"
+    const destBucketPath = `${bucketRoot}/${fileName}.png`
     //const tempLocalFile = 'fractastic/examples/julia1.png';
     console.log('making', tempLocalFilePpm);
 
@@ -62,7 +63,10 @@ export class ImageMaker {
       '1000', '1',
       '-0.4', '0.6', String(d)
     ]
-
+    let images = [{local: tempLocalFilePng,
+                   bucketPath: destBucketPath,
+                   color: 'black'}];
+    let results = [];
     return spawn('./fractastic/fractastic', fractasticArgs,
       { capture: [ 'stdout', 'stderr' ]})
     .then((result) => {
@@ -72,14 +76,35 @@ export class ImageMaker {
       //    convert $output_file.ppm $output_file.png
       return spawn('convert', [tempLocalFilePpm, tempLocalFilePng], { capture: [ 'stdout', 'stderr' ]})
       .then((convertResult) => {
-        console.log('[spawn] stdout: ', convertResult.stdout.toString());
-        return this.bucket.upload(tempLocalFilePng, {destination: destBucketPath, metadata: metadata}).then(() => {
-          return {path: destBucketPath};
+        console.log('[spawn convert ppm => png] stdout: ', convertResult.stdout.toString());
+        const newLocalFile = path.join(os.tmpdir(), `${fileName}-blue.png`);
+        return spawn('convert', [tempLocalFilePng,
+                                 '-fill', 'blue', '-tint', '100',
+                                 newLocalFile],
+                                 { capture: [ 'stdout', 'stderr' ]})
+              .then((colorConvertResult) => {
+                console.log('[spawn convert tint blue] stdout: ', colorConvertResult.stdout.toString());
+                return {local: newLocalFile,
+                        bucketPath: `${bucketRoot}/${fileName}-blue.png`,
+                        color: 'blue'}
+              })
+      })
+      .then((imageData) => {
+        console.log('imageData', imageData);
+        images.push(imageData);
+        let uploadPromises = images.map((data) => {
+          return this.bucket.upload(data.local, {destination: data.bucketPath, metadata: metadata})
+                .then(() => {
+                  return results.push({path: data.bucketPath, color:data.color});
+                })
+                .catch(function (err) {
+                  console.error('[bucket.upload] err: ', err);
+                });
         })
-        .catch(function (err) {
-          console.error('[bucket.upload] err: ', err);
+        return Promise.all(uploadPromises)
+        .then(() => {
+          return results;
         });
-
       })
     })
     .catch(function (err) {
