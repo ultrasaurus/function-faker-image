@@ -13,7 +13,7 @@ const Y_MAX=2.0
 // function f(z) = zd + c
 const CRE=-0.4 // the real component of the complex parameter c
 const CIM=0.6 // the imaginary component of the complex parameter c
-const D=2   //  the real parameter d
+const D=3   //  the real parameter d
 const C=10 // color_multiplier
 
 
@@ -39,7 +39,11 @@ export class ImageMaker {
   // x_max:number = X_MAX
 
   make(options: any): Promise<Array<{ path: string, color: string }> > {
-    const d = parseInt(options['d']) || 3;
+    let d = parseInt(options['d']) || D;
+    let c = parseInt(options['c']) || C;
+    let cre = parseFloat(options['cre']) || CRE;
+    let cim = parseFloat(options['cim']) || CIM;
+
     console.log('d=', d);
     const metadata = {
       contentType: 'image/png',
@@ -47,7 +51,7 @@ export class ImageMaker {
       // 'Cache-Control': 'public,max-age=3600',
     };
 
-    const fileName  = `julia_${d}`;
+    const fileName  = `julia_c${c}_${cre}_${cim}_d${d}`;
     const tempLocalFilePng = path.join(os.tmpdir(), fileName + '.png');
     const tempLocalFilePpm = path.join(os.tmpdir(), fileName + '.ppm');
     const bucketRoot = "images"
@@ -57,11 +61,17 @@ export class ImageMaker {
 
     // `${tempLocalFilePpm}`
     const pemFile = fs.createWriteStream(tempLocalFilePpm);
+    // ./fractastic J [width] [height]
+    //            [x_min] [x_max] [y_min] [y_max]
+    //            [max_iterations]
+    //            [color_multiplier]
+    //            [c_re] [c_im]
+    //            [d]
     const fractasticArgs = [
       'J', `${IMAGE_WIDTH}`, `${IMAGE_HEIGHT}`,
       '-2', '2', '-2', '2',
-      '1000', '1',
-      '-0.4', '0.6', String(d)
+      '1000', String(c),
+      String(cre), String(cim), String(d)
     ]
     let images = [{local: tempLocalFilePng,
                    bucketPath: destBucketPath,
