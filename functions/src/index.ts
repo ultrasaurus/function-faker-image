@@ -5,6 +5,7 @@ import * as os from 'os'
 import * as faker from 'faker';
 import * as Twitter from 'twitter'
 import { ImageMaker } from './image-maker';
+import { listAvailableFonts } from './system-info';
 import * as serviceAccount from '../serviceAccount.json';
 
 const adminConfig = JSON.parse(process.env.FIREBASE_CONFIG)
@@ -155,12 +156,10 @@ async function _tweetNewItems(snapshot: FirebaseFirestore.DocumentSnapshot, cont
 
   const storageFile = admin.storage().bucket().file(data.storagePath);
   const posterUrl = `https://${adminConfig.projectId}.firebaseapp.com/posters/${id}`;
-
   try {
     const buffer = await storageFile.download();
     const response = await twitter.post('media/upload', { media: buffer });
     const mediaId = response.media_id_string;
-
     const tweet = await twitter.post('statuses/update', {
       status: `Take a look at our latest poster "${data.message}"\n${posterUrl}`,
       media_ids: mediaId
@@ -171,3 +170,16 @@ async function _tweetNewItems(snapshot: FirebaseFirestore.DocumentSnapshot, cont
     console.error(err);
   }
 }
+
+
+// list fonts available on the system
+export const listFonts = functions.https.onRequest(async (req, res) => {
+  try {
+    const result = await listAvailableFonts();
+    console.log(result);
+    res.json(result.stdout);
+  }
+  catch (e) {
+    res.status(500).send(e)
+  }
+})
