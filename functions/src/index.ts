@@ -85,7 +85,9 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
     res.status(500).send(err)
   }
   finally {
-    console.log(`Deleting ${imageResults.localPath}`)
-    fs.unlinkSync(imageResults.localPath)
+    if (imageResults) {
+      console.log(`Deleting ${imageResults.localPath}`);
+      fs.unlinkSync(imageResults.localPath);
+    }
   }
 });
