@@ -1,4 +1,3 @@
-import * as Storage from '@google-cloud/storage'
 import { spawn } from 'child-process-promise'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -18,31 +17,12 @@ const C=10 // color_multiplier
 
 
 export class ImageMaker {
-  private bucket: any;
-  // TODO Accept an instance of Storage here instead the name of the bucket.
-  // We can let the admin SDK automatically initialize the Storage SDK with
-  // default project credentials.
-  constructor(projectId: string, bucketName: string) {
-    const storageConfg = {
-      projectId: projectId,
-      keyFilename: 'storage-credential.json'
-    }
-
-    const storage = Storage(storageConfg);
-
-    console.log('Storate init complete');
-    this.bucket = storage.bucket(bucketName);
-    console.log('Storate bucket', this.bucket);
-  };
-
-  // x_min:number = X_MIN,
-  // x_max:number = X_MAX
-
-  make(options: any): Promise<Array<{ path: string, color: string }> > {
-    let d = parseInt(options['d']) || D;
-    let c = parseInt(options['c']) || C;
-    let cre = parseFloat(options['cre']) || CRE;
-    let cim = parseFloat(options['cim']) || CIM;
+  public async make(options: any) {
+    const d = parseInt(options['d']) || D;
+    const c = parseInt(options['c']) || C;
+    const cre = parseFloat(options['cre']) || CRE;
+    const cim = parseFloat(options['cim']) || CIM;
+    const color = options['color'] || 'black'
 
     console.log('d=', d);
     const metadata = {
@@ -51,77 +31,72 @@ export class ImageMaker {
       // 'Cache-Control': 'public,max-age=3600',
     };
 
-    const fileName  = `julia_c${c}_${cre}_${cim}_d${d}`;
-    const tempLocalFilePng = path.join(os.tmpdir(), fileName + '.png');
-    const tempLocalFilePpm = path.join(os.tmpdir(), fileName + '.ppm');
-    const bucketRoot = "images"
-    const destBucketPath = `${bucketRoot}/${fileName}.png`
-    //const tempLocalFile = 'fractastic/examples/julia1.png';
-    console.log('making', tempLocalFilePpm);
+    const baseName  = `julia_c${c}_${cre}_${cim}_d${d}`;
+    const baseNameColor  = `${baseName}-${color}`;
 
-    // `${tempLocalFilePpm}`
-    const pemFile = fs.createWriteStream(tempLocalFilePpm);
-    // ./fractastic J [width] [height]
-    //            [x_min] [x_max] [y_min] [y_max]
-    //            [max_iterations]
-    //            [color_multiplier]
-    //            [c_re] [c_im]
-    //            [d]
-    const fractasticArgs = [
-      'J', `${IMAGE_WIDTH}`, `${IMAGE_HEIGHT}`,
-      '-2', '2', '-2', '2',
-      '1000', String(c),
-      String(cre), String(cim), String(d)
-    ]
-    let images = [{local: tempLocalFilePng,
-                   bucketPath: destBucketPath,
-                   color: 'black'}];
-    let results = [];
-    return spawn('./fractastic/fractastic', fractasticArgs,
-      { capture: [ 'stdout', 'stderr' ]})
-    .then((result) => {
+    const tempFractasticPath = path.join(os.tmpdir(), baseName + '.ppm');
+    const tempPngConvertPath = path.join(os.tmpdir(), baseName + '.png');
+    const tempColorConvertPath = path.join(os.tmpdir(), baseNameColor + '.png');
+
+    try {
+      // ./fractastic
+      //   J [width] [height]
+      //   [x_min] [x_max] [y_min] [y_max]
+      //   [max_iterations]
+      //   [color_multiplier]
+      //   [c_re] [c_im]
+      //   [d]
+      const fractasticArgs = [
+        'J', IMAGE_WIDTH, IMAGE_HEIGHT,
+        '-2', '2', '-2', '2',
+        '1000',
+        String(c),
+        String(cre), String(cim),
+        String(d)
+      ]
+
+      const fractasticResult = await spawn(
+        './fractastic/fractastic',
+        fractasticArgs,
+        { capture: [ 'stdout', 'stderr' ] }
+      )
       console.log('fractastic completed without error');
-      pemFile.write(result.stdout);
-      pemFile.end();
-      //    convert $output_file.ppm $output_file.png
-      return spawn('convert', [tempLocalFilePpm, tempLocalFilePng], { capture: [ 'stdout', 'stderr' ]})
-      .then((convertResult) => {
-        console.log('[spawn convert ppm => png] stdout: ', convertResult.stdout.toString());
-        const newLocalFile = path.join(os.tmpdir(), `${fileName}-blue.png`);
-        return spawn('convert', [tempLocalFilePng,
-                                 '-fill', 'blue', '-tint', '100',
-                                 newLocalFile],
-                                 { capture: [ 'stdout', 'stderr' ]})
-              .then((colorConvertResult) => {
-                console.log('[spawn convert tint blue] stdout: ', colorConvertResult.stdout.toString());
-                return {local: newLocalFile,
-                        bucketPath: `${bucketRoot}/${fileName}-blue.png`,
-                        color: 'blue'}
-              })
-      })
-      .then((imageData) => {
-        console.log('imageData', imageData);
-        images.push(imageData);
-        let uploadPromises = images.map((data) => {
-          return this.bucket.upload(data.local, {destination: data.bucketPath, metadata: metadata})
-                .then(() => {
-                  return results.push({path: data.bucketPath, color:data.color});
-                })
-                .catch(function (err) {
-                  console.error('[bucket.upload] err: ', err);
-                });
-        })
-        return Promise.all(uploadPromises)
-        .then(() => {
-          return results;
-        });
-      })
-    })
-    .catch(function (err) {
-      console.error('[spawn] err: ', err);
-      console.error('[spawn] err.stderr: ', err.stderr);
-      console.error('[spawn] err.stdout: ', err.stdout);
-      return "there was an error"
-    });
+
+      await new Promise((resolve, reject) => {
+        const ppmStream = fs.createWriteStream(tempFractasticPath);
+        ppmStream.write(fractasticResult.stdout);
+        ppmStream.end();
+        ppmStream.on("finish", resolve);
+        ppmStream.on("error", reject);
+      });
+
+      // Convert fractastic ppm to png
+
+      const pngConvertResult = await spawn(
+        'convert',
+        [ tempFractasticPath, tempPngConvertPath ],
+        { capture: [ 'stdout', 'stderr' ] }
+      );
+      console.log('[spawn convert ppm => png] stdout:', pngConvertResult.stdout.toString());
+
+      // Add some color to png
+
+      const convertArgs = [
+        tempPngConvertPath,
+        '-fill', color, '-tint', '100',
+        tempColorConvertPath
+      ];
+
+      const colorConvertResult = await spawn('convert', convertArgs, { capture: [ 'stdout', 'stderr' ]})
+      console.log(`[spawn convert tint ${color}] stdout:`, colorConvertResult.stdout.toString());
+
+      return { localPath: tempColorConvertPath };
+    }
+    finally {
+      console.log(`Deleting ${tempFractasticPath}`)
+      fs.unlinkSync(tempFractasticPath)
+      console.log(`Deleting ${tempPngConvertPath}`)
+      fs.unlinkSync(tempPngConvertPath)
+    }
   }
 }

@@ -1,6 +1,6 @@
 node_modules/
 firebase-debug.log
 functions/lib/
-*credential.json
+functions/serviceAccount.json
 .vscode
 .firebaserc
