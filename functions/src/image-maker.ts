@@ -25,11 +25,6 @@ export class ImageMaker {
     const color = options['color'] || 'black'
 
     console.log('d=', d);
-    const metadata = {
-      contentType: 'image/png',
-      // TODO: enable Client-side caching you can set the Cache-Control headers here. Uncomment below.
-      // 'Cache-Control': 'public,max-age=3600',
-    };
 
     const baseName  = `julia_c${c}_${cre}_${cim}_d${d}`;
     const baseNameColor  = `${baseName}-${color}`;
@@ -55,6 +50,7 @@ export class ImageMaker {
         String(d)
       ]
 
+      console.log("Executing fractastic with ", fractasticArgs);
       const fractasticResult = await spawn(
         './fractastic/fractastic',
         fractasticArgs,
