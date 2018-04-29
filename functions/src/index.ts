@@ -29,21 +29,13 @@ export const newImage = functions.https.onRequest(async (request, response) => {
 export const addFakePoster = functions.https.onRequest(async (req, res) => {
   console.log('addFakePoster query', req.query);
 
-  const color = req.query['color'] || 'black'
-
-  const imageOptions = {
-    d: req.query['d'],
-    color: color
-  }
-
   const noun = faker.company.bsNoun();
   const verb = faker.company.bsBuzz();
   const adjective = faker.company.bsAdjective();
-  // const obj = {
-  //   message: `${verb} ${adjective} ${noun}`,
-  //   color: color,
-  //   topic: noun
-  // };
+  const message = `${verb} ${adjective} ${noun}`;
+
+  const imageOptions = req;
+  imageOptions['message'] = message;
 
   const itemsColl = admin.firestore().collection('items');
   const docRef = itemsColl.doc();
@@ -70,7 +62,7 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
     // Add the doc data
     const docData = {
       topic: noun,
-      message: `${verb} ${adjective} ${noun}`,
+      message: message,
       price: randomPrice(),
       color: color,
       storagePath: storagePath,
