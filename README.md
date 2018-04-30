@@ -32,3 +32,7 @@ curl https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster
 curl https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster?d=5
 ```
 
+to remove all the data created by addFakePoster
+```
+./functions/clean.sh -y
+```
