@@ -30,6 +30,7 @@ export class ImageMaker {
   }
 
   public async make(options: any) {
+    console.log('make options', options);
     const d = parseInt(options['d']) || D;
     const c = parseInt(options['c']) || C;
     const cre = parseFloat(options['cre']) || CRE;

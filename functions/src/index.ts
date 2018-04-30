@@ -35,7 +35,7 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
   const adjective = faker.company.bsAdjective();
   const message = `${verb} ${adjective} ${noun}`;
 
-  const imageOptions = req;
+  const imageOptions = req.query;
   imageOptions['message'] = message;
 
   const itemsColl = admin.firestore().collection('items');
