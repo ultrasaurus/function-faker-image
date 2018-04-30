@@ -29,6 +29,7 @@ export const newImage = functions.https.onRequest(async (request, response) => {
 export const addFakePoster = functions.https.onRequest(async (req, res) => {
   console.log('addFakePoster query', req.query);
 
+  const color = req.query['color'] || 'black';
   const noun = faker.company.bsNoun();
   const verb = faker.company.bsBuzz();
   const adjective = faker.company.bsAdjective();
@@ -38,15 +39,15 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
   imageOptions['message'] = message;
 
   const itemsColl = admin.firestore().collection('items');
-  const docRef = itemsColl.doc();
 
-  let imageResults: { localPath: string };
+  let imageResults: { localPath: string, baseName: string };
 
   try {
     const imageMaker = new ImageMaker();
     imageResults = await imageMaker.make(imageOptions);
     console.log('imageMaker.make results:', imageResults);
 
+    const docRef = itemsColl.doc();
     // Upload to Storage with the same name as the id of the doc to be created
     const storagePath = `images/${docRef.id}.png`;
     const uploadOptions = { destination: storagePath };

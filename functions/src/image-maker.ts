@@ -17,6 +17,18 @@ const C=10 // color_multiplier
 
 
 export class ImageMaker {
+  public async colorize(color:string, sourceFilePath:string, newFilePath:string) {
+      // Add some color to png
+      const convertArgs = [
+        sourceFilePath,
+        '-fill', color, '-tint', '100',
+        newFilePath
+      ];
+
+      const colorConvertResult = await spawn('convert', convertArgs, { capture: [ 'stdout', 'stderr' ]})
+      console.log(`[spawn convert tint ${color}] stdout:`, colorConvertResult.stdout.toString());
+  }
+
   public async make(options: any) {
     const d = parseInt(options['d']) || D;
     const c = parseInt(options['c']) || C;
@@ -27,11 +39,9 @@ export class ImageMaker {
     console.log('d=', d);
 
     const baseName  = `julia_c${c}_${cre}_${cim}_d${d}`;
-    const baseNameColor  = `${baseName}-${color}`;
 
     const tempFractasticPath = path.join(os.tmpdir(), baseName + '.ppm');
     const tempPngConvertPath = path.join(os.tmpdir(), baseName + '.png');
-    const tempColorConvertPath = path.join(os.tmpdir(), baseNameColor + '.png');
 
     try {
       // ./fractastic
@@ -75,24 +85,14 @@ export class ImageMaker {
       );
       console.log('[spawn convert ppm => png] stdout:', pngConvertResult.stdout.toString());
 
-      // Add some color to png
-
-      const convertArgs = [
-        tempPngConvertPath,
-        '-fill', color, '-tint', '100',
-        tempColorConvertPath
-      ];
-
-      const colorConvertResult = await spawn('convert', convertArgs, { capture: [ 'stdout', 'stderr' ]})
-      console.log(`[spawn convert tint ${color}] stdout:`, colorConvertResult.stdout.toString());
-
-      return { localPath: tempColorConvertPath };
+      return {
+        baseName: baseName,
+        localPath: tempPngConvertPath
+      };
     }
     finally {
       console.log(`Deleting ${tempFractasticPath}`)
       fs.unlinkSync(tempFractasticPath)
-      console.log(`Deleting ${tempPngConvertPath}`)
-      fs.unlinkSync(tempPngConvertPath)
     }
   }
 }
