@@ -30,29 +30,35 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
   console.log('addFakePoster query', req.query);
 
   const color = req.query['color'] || 'black';
-  const noun = faker.company.bsNoun();
+  let message = req.query['message'];
+  let noun = req.query['noun'];
+  if (!noun) noun = faker.company.bsNoun();
   const verb = faker.company.bsBuzz();
   const adjective = faker.company.bsAdjective();
-  const message = `${verb} ${adjective} ${noun}`;
-
+  if (!message) {
+    message = `${verb[0].toUpperCase()}${verb.slice(1)} ${adjective} ${noun}.`;
+  }
   const imageOptions = req.query;
   imageOptions['message'] = message;
 
   const itemsColl = admin.firestore().collection('items');
 
   let imageResults: { localPath: string, baseName: string };
-
+  let posterFile = '';
   try {
     const imageMaker = new ImageMaker();
     imageResults = await imageMaker.make(imageOptions);
     console.log('imageMaker.make results:', imageResults);
+    // posterFile = await imageMaker.addCaption(message,
+    //                                             imageResults.baseName,
+    //                                             imageResults.localPath);
 
     const docRef = itemsColl.doc();
     // Upload to Storage with the same name as the id of the doc to be created
     const storagePath = `images/${docRef.id}.png`;
     const uploadOptions = { destination: storagePath };
     const bucket = admin.storage().bucket();
-    const files = await bucket.upload(imageResults.localPath, uploadOptions);
+    const files = await bucket.upload(posterFile, uploadOptions);
 
     // Generate a public download URL
     const downloadUrl = await files[0].getSignedUrl({
@@ -81,6 +87,10 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
     if (imageResults) {
       console.log(`Deleting ${imageResults.localPath}`);
       fs.unlinkSync(imageResults.localPath);
+    }
+    if (posterFile !== '') {
+      console.log(`Deleting ${posterFile}`);
+      fs.unlinkSync(posterFile);
     }
   }
 });

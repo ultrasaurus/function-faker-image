@@ -29,6 +29,59 @@ export class ImageMaker {
       console.log(`[spawn convert tint ${color}] stdout:`, colorConvertResult.stdout.toString());
   }
 
+  // this fails
+  async addCaption(message:string,
+                    baseName:string,
+                    localInputFile:string) {
+    console.log('addCaption', message);
+    const newTmpFile = path.join(os.tmpdir(), baseName + '_caption.png');
+    console.log('newTmpFile = ', newTmpFile)
+
+    // There appears to be an issue with composite on Linux
+    // https://unix.stackexchange.com/questions/205344/convert-composite-freezes
+    // Read elsewhere that composite is a deprecated API
+    // let options =
+    // `${localInputFile} -bordercolor black -border 70 -background black -size 500x60 -fill white -gravity south`
+    // .split(' ');
+    // options.push("label:hello");
+    // options.push('-composite');
+
+    // alternate approach, also hangs
+    // const options = `${localInputFile} -background black -size 500x60 -fill white label:'hello' +append`
+    // .split(' ');
+
+    // alternate approach, also hangs
+    // const options = `-debug all ${localInputFile} -fill white -gravity south -draw`
+    // .split(' ');
+    // options.push("text 0,0 'Hello'");
+    // options.push(newTmpFile);
+    // console.log('options', options)
+
+
+    // convert fractal.png -fill white  -gravity south -annotate 0 'hello there' out.png
+    const options = `-debug all ${localInputFile} -fill white -stroke white -gravity south -annotate 0`
+    .split(' ');
+    options.push("hello");
+    options.push(newTmpFile);
+    console.log('options', options)
+
+
+    let result = {};
+    try {
+      result = await spawn('convert', options,
+      { capture: [ 'stdout', 'stderr' ]})
+      console.log('result=',result);
+      return newTmpFile;
+
+    }
+    catch(e) {
+      console.log('addCaption exception:',e);
+      console.log('result=',result);
+      throw(e);
+    }
+
+  }
+
   public async make(options: any) {
     console.log('make options', options);
     const d = parseInt(options['d']) || D;
@@ -39,7 +92,10 @@ export class ImageMaker {
 
     console.log('d=', d);
 
-    const baseName  = `julia_c${c}_${cre}_${cim}_d${d}`;
+    let baseName  = `julia_c${c}_${cre}_${cim}_d${d}`;
+    // avoid escaping for imagemagick
+    baseName = baseName.replace(/-/g, "n");  //  - => n
+    baseName = baseName.replace(/\./g, "");  // just remove .
 
     const tempFractasticPath = path.join(os.tmpdir(), baseName + '.ppm');
     const tempPngConvertPath = path.join(os.tmpdir(), baseName + '.png');
