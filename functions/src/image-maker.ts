@@ -17,16 +17,20 @@ const C=10 // color_multiplier
 
 
 export class ImageMaker {
-  public async colorize(color:string, sourceFilePath:string, newFilePath:string) {
-      // Add some color to png
-      const convertArgs = [
-        sourceFilePath,
-        '-fill', color, '-tint', '100',
-        newFilePath
-      ];
+      // Add some color to image
+      public async colorize(color:string, sourceFilePath:string, baseName: string) {
+        console.log('colorize', color);
+        const newTmpFile = path.join(os.tmpdir(), `${baseName}_${color}.png`);
 
-      const colorConvertResult = await spawn('convert', convertArgs, { capture: [ 'stdout', 'stderr' ]})
-      console.log(`[spawn convert tint ${color}] stdout:`, colorConvertResult.stdout.toString());
+        const convertArgs = [
+          sourceFilePath,
+          '-fill', color, '-tint', '100',
+          newTmpFile
+        ];
+
+        const colorConvertResult = await spawn('convert', convertArgs, { capture: [ 'stdout', 'stderr' ]})
+        console.log(`[spawn convert tint ${color}] stdout:`, colorConvertResult.stdout.toString());
+        return newTmpFile;
   }
 
   // this fails

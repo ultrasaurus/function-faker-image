@@ -45,10 +45,13 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
 
   let imageResults: { localPath: string, baseName: string };
   let posterFile = '';
+  let colorizedFile = '';
   try {
     const imageMaker = new ImageMaker();
     imageResults = await imageMaker.make(imageOptions);
     console.log('imageMaker.make results:', imageResults);
+    colorizedFile = await imageMaker.colorize(color, imageResults.localPath, imageResults.baseName);
+    console.log('colorizedFile:', colorizedFile);
     // posterFile = await imageMaker.addCaption(message,
     //                                             imageResults.baseName,
     //                                             imageResults.localPath);
@@ -58,7 +61,7 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
     const storagePath = `images/${docRef.id}.png`;
     const uploadOptions = { destination: storagePath };
     const bucket = admin.storage().bucket();
-    const files = await bucket.upload(posterFile, uploadOptions);
+    const files = await bucket.upload(colorizedFile, uploadOptions);
 
     // Generate a public download URL
     const downloadUrl = await files[0].getSignedUrl({
@@ -72,6 +75,8 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
       message: message,
       price: randomPrice(),
       color: color,
+      style: "Julia Set",
+      created: new Date(),
       storagePath: storagePath,
       url: downloadUrl[0]
     }
@@ -85,12 +90,16 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
   }
   finally {
     if (imageResults) {
-      console.log(`Deleting ${imageResults.localPath}`);
+      console.log(`Deleting image: ${imageResults.localPath}`);
       fs.unlinkSync(imageResults.localPath);
     }
     if (posterFile !== '') {
-      console.log(`Deleting ${posterFile}`);
+      console.log(`Deleting posterFile: ${posterFile}`);
       fs.unlinkSync(posterFile);
+    }
+    if (colorizedFile !== '') {
+      console.log(`Deleting colorizedFile: ${colorizedFile}`);
+      fs.unlinkSync(colorizedFile);
     }
   }
 });
