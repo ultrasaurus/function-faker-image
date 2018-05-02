@@ -29,7 +29,10 @@ export const newImage = functions.https.onRequest(async (request, response) => {
 export const addFakePoster = functions.https.onRequest(async (req, res) => {
   console.log('addFakePoster query', req.query);
 
-  const color = req.query['color'] || 'black';
+  let colors = "black purple indigo blue navy aquamarine green yellow gold orange red".split(' ')
+  const colorArg = req.query['color'];
+  if (colorArg) colors = [colorArg];    // override
+
   let message = req.query['message'];
   let noun = req.query['noun'];
   if (!noun) noun = faker.company.bsNoun();
@@ -50,39 +53,49 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
     const imageMaker = new ImageMaker();
     imageResults = await imageMaker.make(imageOptions);
     console.log('imageMaker.make results:', imageResults);
-    colorizedFile = await imageMaker.colorize(color, imageResults.localPath, imageResults.baseName);
-    console.log('colorizedFile:', colorizedFile);
-    // posterFile = await imageMaker.addCaption(message,
-    //                                             imageResults.baseName,
-    //                                             imageResults.localPath);
+    let datafile =  imageResults.localPath;  // reference to the one we're uploading
+    const posterPromises = colors.map(async color => {
+      console.log('color=',color);
+      if (color !== 'black') {
+        colorizedFile = await imageMaker.colorize(color, imageResults.localPath, imageResults.baseName);
+        datafile = colorizedFile;
+        console.log('colorizedFile:', colorizedFile);
+      }
 
-    const docRef = itemsColl.doc();
-    // Upload to Storage with the same name as the id of the doc to be created
-    const storagePath = `images/${docRef.id}.png`;
-    const uploadOptions = { destination: storagePath };
-    const bucket = admin.storage().bucket();
-    const files = await bucket.upload(colorizedFile, uploadOptions);
+      // posterFile = await imageMaker.addCaption(message,
+      //                                             imageResults.baseName,
+      //                                             imageResults.localPath);
 
-    // Generate a public download URL
-    const downloadUrl = await files[0].getSignedUrl({
-      action: 'read',
-      expires: '2099-01-01'
-    });
+      const docRef = itemsColl.doc();
+      // Upload to Storage with the same name as the id of the doc to be created
+      const storagePath = `images/${docRef.id}.png`;
+      const uploadOptions = { destination: storagePath };
+      const bucket = admin.storage().bucket();
+      const files = await bucket.upload(datafile, uploadOptions);
 
-    // Add the doc data
-    const docData = {
-      topic: noun,
-      message: message,
-      price: randomPrice(),
-      color: color,
-      style: "Julia Set",
-      created: new Date(),
-      storagePath: storagePath,
-      url: downloadUrl[0]
-    }
-    await docRef.set(docData);
+      // Generate a public download URL
+      const downloadUrl = await files[0].getSignedUrl({
+        action: 'read',
+        expires: '2099-01-01'
+      });
 
-    res.json(docData);
+      // Add the doc data
+      const docData = {
+        topic: noun,
+        message: message,
+        price: randomPrice(),
+        color: color,
+        style: "Julia Set",
+        created: new Date(),
+        storagePath: storagePath,
+        url: downloadUrl[0]
+      }
+      await docRef.set(docData);
+      return docData;
+    })
+    const results = await Promise.all(posterPromises);
+
+    res.json(results);
   }
   catch (err) {
     console.error(err)
