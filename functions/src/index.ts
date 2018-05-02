@@ -33,12 +33,13 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
   const colorArg = req.query['color'];
   if (colorArg) colors = [colorArg];    // override
 
+  let random_message = false;
   let message = req.query['message'];
-  let noun = req.query['noun'];
-  if (!noun) noun = faker.company.bsNoun();
-  const verb = faker.company.bsBuzz();
-  const adjective = faker.company.bsAdjective();
+  let noun = faker.company.bsNoun();
+  let verb = faker.company.bsBuzz();
+  let adjective = faker.company.bsAdjective();
   if (!message) {
+    random_message = true;
     message = `${verb[0].toUpperCase()}${verb.slice(1)} ${adjective} ${noun}.`;
   }
   const imageOptions = req.query;
@@ -60,6 +61,12 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
         colorizedFile = await imageMaker.colorize(color, imageResults.localPath, imageResults.baseName);
         datafile = colorizedFile;
         console.log('colorizedFile:', colorizedFile);
+        if (random_message) {
+          noun = faker.company.bsNoun();
+          verb = faker.company.bsBuzz();
+          adjective = faker.company.bsAdjective();
+          message = `${verb[0].toUpperCase()}${verb.slice(1)} ${adjective} ${noun}.`;
+        }
       }
 
       // posterFile = await imageMaker.addCaption(message,

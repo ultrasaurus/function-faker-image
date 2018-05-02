@@ -19,7 +19,7 @@ const C=10 // color_multiplier
 export class ImageMaker {
       // Add some color to image
       public async colorize(color:string, sourceFilePath:string, baseName: string) {
-        console.log('colorize', color);
+        //console.log('colorize', color);
         const newTmpFile = path.join(os.tmpdir(), `${baseName}_${color}.png`);
 
         const convertArgs = [
@@ -29,7 +29,7 @@ export class ImageMaker {
         ];
 
         const colorConvertResult = await spawn('convert', convertArgs, { capture: [ 'stdout', 'stderr' ]})
-        console.log(`[spawn convert tint ${color}] stdout:`, colorConvertResult.stdout.toString());
+        //console.log(`[spawn convert tint ${color}] stdout:`, colorConvertResult.stdout.toString());
         return newTmpFile;
   }
 
@@ -37,9 +37,9 @@ export class ImageMaker {
   async addCaption(message:string,
                     baseName:string,
                     localInputFile:string) {
-    console.log('addCaption', message);
+    //console.log('addCaption', message);
     const newTmpFile = path.join(os.tmpdir(), baseName + '_caption.png');
-    console.log('newTmpFile = ', newTmpFile)
+    //console.log('newTmpFile = ', newTmpFile)
 
     // There appears to be an issue with composite on Linux
     // https://unix.stackexchange.com/questions/205344/convert-composite-freezes
@@ -67,14 +67,14 @@ export class ImageMaker {
     .split(' ');
     options.push("hello");
     options.push(newTmpFile);
-    console.log('options', options)
+    //console.log('options', options)
 
 
     let result = {};
     try {
       result = await spawn('convert', options,
       { capture: [ 'stdout', 'stderr' ]})
-      console.log('result=',result);
+      //console.log('result=',result);
       return newTmpFile;
 
     }
@@ -87,7 +87,7 @@ export class ImageMaker {
   }
 
   public async make(options: any) {
-    console.log('make options', options);
+    //console.log('make options', options);
     const d = parseInt(options['d']) || D;
     const c = parseInt(options['c']) || C;
     const cre = parseFloat(options['cre']) || CRE;
@@ -98,7 +98,7 @@ export class ImageMaker {
     const y_min = parseFloat(options['y_min']) || Y_MIN;
     const y_max = parseFloat(options['y_max']) || Y_MAX;
 
-    console.log('d=', d);
+    //console.log('d=', d);
 
     let baseName  = `julia_c${c}_${cre}_${cim}_d${d}`;
     // avoid escaping for imagemagick
@@ -128,13 +128,13 @@ export class ImageMaker {
       //   String(d)
       // ]
 
-      console.log("Executing fractastic with ", fractasticArgs);
+      //console.log("Executing fractastic with ", fractasticArgs);
       const fractasticResult = await spawn(
         './fractastic/fractastic',
         fractasticArgs,
         { capture: [ 'stdout', 'stderr' ] }
       )
-      console.log('fractastic completed without error');
+      //console.log('fractastic completed without error');
 
       await new Promise((resolve, reject) => {
         const ppmStream = fs.createWriteStream(tempFractasticPath);
@@ -151,7 +151,7 @@ export class ImageMaker {
         [ tempFractasticPath, tempPngConvertPath ],
         { capture: [ 'stdout', 'stderr' ] }
       );
-      console.log('[spawn convert ppm => png] stdout:', pngConvertResult.stdout.toString());
+      //console.log('[spawn convert ppm => png] stdout:', pngConvertResult.stdout.toString());
 
       return {
         baseName: baseName,
@@ -160,7 +160,7 @@ export class ImageMaker {
       };
     }
     finally {
-      console.log(`Deleting ${tempFractasticPath}`)
+      //console.log(`Deleting ${tempFractasticPath}`)
       fs.unlinkSync(tempFractasticPath)
     }
   }
