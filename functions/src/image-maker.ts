@@ -93,6 +93,10 @@ export class ImageMaker {
     const cre = parseFloat(options['cre']) || CRE;
     const cim = parseFloat(options['cim']) || CIM;
     const color = options['color'] || 'black'
+    const x_min = parseFloat(options['x_min']) || X_MIN;
+    const x_max = parseFloat(options['x_max']) || X_MAX;
+    const y_min = parseFloat(options['y_min']) || Y_MIN;
+    const y_max = parseFloat(options['y_max']) || Y_MAX;
 
     console.log('d=', d);
 
@@ -112,14 +116,17 @@ export class ImageMaker {
       //   [color_multiplier]
       //   [c_re] [c_im]
       //   [d]
-      const fractasticArgs = [
-        'J', IMAGE_WIDTH, IMAGE_HEIGHT,
-        '-2', '2', '-2', '2',
-        '1000',
-        String(c),
-        String(cre), String(cim),
-        String(d)
-      ]
+      const fractasticCmd =
+      `J ${IMAGE_WIDTH} ${IMAGE_HEIGHT} ${x_min} ${x_max} ${y_min} ${y_max} 1000 ${c} ${cre} ${cim} ${d}`
+      const fractasticArgs = fractasticCmd.split(' ');
+      // const fractasticArgs = [
+      //   'J', IMAGE_WIDTH, IMAGE_HEIGHT,
+      //   '-2', '2', '-2', '2',
+      //   '1000',
+      //   String(c),
+      //   String(cre), String(cim),
+      //   String(d)
+      // ]
 
       console.log("Executing fractastic with ", fractasticArgs);
       const fractasticResult = await spawn(
@@ -148,7 +155,8 @@ export class ImageMaker {
 
       return {
         baseName: baseName,
-        localPath: tempPngConvertPath
+        localPath: tempPngConvertPath,
+        details: fractasticCmd
       };
     }
     finally {

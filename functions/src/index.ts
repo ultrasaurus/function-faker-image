@@ -46,7 +46,7 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
 
   const itemsColl = admin.firestore().collection('items');
 
-  let imageResults: { localPath: string, baseName: string };
+  let imageResults: { localPath: string, baseName: string, details: string };
   let posterFile = '';
   let colorizedFile = '';
   try {
@@ -88,7 +88,8 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
         style: "Julia Set",
         created: new Date(),
         storagePath: storagePath,
-        url: downloadUrl[0]
+        url: downloadUrl[0],
+        details: imageResults.details
       }
       await docRef.set(docData);
       return docData;

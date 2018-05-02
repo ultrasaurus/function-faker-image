@@ -30,9 +30,11 @@ firebase deploy --only functions
 
 curl https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster
 curl https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster?d=5
+curl "https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster?d=2&cre=0.9&cim=0.5&c=12&x_min=-2.2&x_max=1.8&y_min=-1.9&y_max=1.7"
 ```
 
 to remove all the data created by addFakePoster
 ```
 ./functions/clean.sh -y
 ```
+
