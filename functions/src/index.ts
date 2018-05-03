@@ -1,15 +1,15 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import * as path from 'path'
 import * as fs from 'fs'
+import * as os from 'os'
 import * as faker from 'faker';
+import * as Twitter from 'twitter'
 import { ImageMaker } from './image-maker';
 import * as serviceAccount from '../serviceAccount.json';
 
 const adminConfig = JSON.parse(process.env.FIREBASE_CONFIG)
 adminConfig.credential = admin.credential.cert(<any>serviceAccount)
 admin.initializeApp(adminConfig);
-
 
 function randomPrice() {
   // 5-25
@@ -103,3 +103,50 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
     }
   }
 });
+
+
+exports.tweetNewItems = functions.firestore.document(`disabled/none`).onCreate((snapshot, context) => {
+  return null
+})
+
+let twitter
+
+if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === "tweetNewItems") {
+  try {
+    const credentials = fs.readFileSync('./twitterCredentials.json').toString();
+    const twitterCredentials = JSON.parse(credentials);
+    twitter = new Twitter(twitterCredentials);
+    console.log("Twitter configured");
+    exports.tweetNewItems = functions.firestore.document('items/{id}').onCreate(_tweetNewItems);
+  }
+  catch (err) {
+    console.warn('Twitter disabled', err)
+  }
+}
+
+async function _tweetNewItems(snapshot: FirebaseFirestore.DocumentSnapshot, context: functions.EventContext) {
+  const id = context.params.id;
+  const data = snapshot.data();
+  if (!data.storagePath) {
+    console.error(`Item ${id} added with no storagePath`);
+    return null;
+  }
+
+  const storageFile = admin.storage().bucket().file(data.storagePath);
+  const posterUrl = `https://${adminConfig.projectId}.firebaseapp.com/posters/${id}`;
+
+  try {
+    const buffer = await storageFile.download();
+    const response = await twitter.post('media/upload', { media: buffer });
+    const mediaId = response.media_id_string;
+
+    const tweet = await twitter.post('statuses/update', {
+      status: `Take a look at our latest poster "${data.message}"\n${posterUrl}`,
+      media_ids: mediaId
+    });
+    console.log(tweet);
+  }
+  catch (err) {
+    console.error(err);
+  }
+}
