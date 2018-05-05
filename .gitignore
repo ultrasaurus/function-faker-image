@@ -5,3 +5,4 @@ functions/serviceAccount.json
 functions/twitterCredentials.json
 .vscode
 .firebaserc
+log.txt
