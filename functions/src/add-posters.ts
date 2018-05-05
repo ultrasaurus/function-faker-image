@@ -7,9 +7,9 @@
 
 import * as WebRequest from 'web-request'
 // import * as args from 'command-line-args'
-const args = require('command-line-args')
+const commandArgs = require('command-line-args')
 
-const options = args([
+const options = commandArgs([
   { name: 'batch-size', alias: 'b', type: Number },
   { name: 'repeat', alias: 'r', type: Boolean },
   { name: 'url', alias: 'u', type: String },
@@ -57,9 +57,8 @@ async function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function doJuliaSeries(baseUrl: string) {
-  let count=0;
-  const promises: Promise<WebRequest.Response<string>>[] = []
+function generateJuliaSeriesArgs() {
+  const args=[];
   const d=2;
   for (let c=10; c<=40; c=c+5) {
     for (let cre=-0.4; cre<1.1; cre=cre+0.1) {
@@ -67,18 +66,20 @@ async function doJuliaSeries(baseUrl: string) {
         for (let shift = 0.0; shift <= 2.6; shift=shift+0.1) {
           const min= MIN + shift*2;
           const max= MAX - shift;
-
-          count = count+1;
-          const queryArgs=`d=${d}&cre=${cre}&cim=${cim}&c=${c}&x_min=${min}&x_max=${max}&y_min=${min}&y_max=${max}`
-          console.log(`${count}: ${queryArgs}`);
-          promises.push(WebRequest.get(`${baseUrl}?${queryArgs}`))
-          if (count > 500) {
-            await sleep(1000);
-          }
+          args.push(`d=${d}&cre=${cre}&cim=${cim}&c=${c}&x_min=${min}&x_max=${max}&y_min=${min}&y_max=${max}`)
         }
       }
     }
   }
+  return args;
+}
+async function doBatchFromArgs(baseUrl: string, queryArgs:Array<string>) {
+  const promises: Promise<WebRequest.Response<string>>[] = []
+  queryArgs.forEach(a => {
+    const requestURL = `${baseUrl}?${a}`;
+    console.log(`requestURL: ${requestURL}`);
+    promises.push(WebRequest.get(requestURL));
+  })
   return Promise.all(promises)
   .then(responses => {
     let count = 0;
@@ -106,7 +107,9 @@ console.log(`Batch size: ${configBatchSize}`)
 
   if (configJulia) {
     console.log('Running Julia Series')
-    await doJuliaSeries(configUrl)
+    const args = generateJuliaSeriesArgs();
+    console.log(`${args.length} variations`)
+    await doBatchFromArgs(configUrl, args.slice(0,100))
   } else if (configRepeat) {
     console.log('Repeating')
     while (true) {
