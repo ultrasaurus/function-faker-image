@@ -3,6 +3,8 @@
 //
 // -b and -r are optional
 
+
+
 import * as WebRequest from 'web-request'
 // import * as args from 'command-line-args'
 const args = require('command-line-args')
@@ -10,15 +12,18 @@ const args = require('command-line-args')
 const options = args([
   { name: 'batch-size', alias: 'b', type: Number },
   { name: 'repeat', alias: 'r', type: Boolean },
-  { name: 'url', alias: 'u', type: String }
+  { name: 'url', alias: 'u', type: String },
+  { name: 'julia', alias: 'j', type: String }
 ])
 
+console.log('options', options);
 const configUrl = options.url
 if (!configUrl) {
   throw new Error('No url given')
 }
 
 const configRepeat = options.repeat || false
+const configJulia = options.julia == null || false
 
 const configBatchSize = options['batch-size'] || 1
 if (configBatchSize < 0) {
@@ -45,12 +50,65 @@ async function doBatch(baseUrl: string, batchSize: number) {
   })
 }
 
+const MIN=-2.0;
+const MAX=2.0;
+
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function doJuliaSeries(baseUrl: string) {
+  let count=0;
+  const promises: Promise<WebRequest.Response<string>>[] = []
+  const d=2;
+  for (let c=10; c<=40; c=c+5) {
+    for (let cre=-0.4; cre<1.1; cre=cre+0.1) {
+      for (let cim=-0.1; cim < 0.6; cim=cim+0.1) {
+        for (let shift = 0.0; shift <= 2.6; shift=shift+0.1) {
+          const min= MIN + shift*2;
+          const max= MAX - shift;
+
+          count = count+1;
+          const queryArgs=`d=${d}&cre=${cre}&cim=${cim}&c=${c}&x_min=${min}&x_max=${max}&y_min=${min}&y_max=${max}`
+          console.log(`${count}: ${queryArgs}`);
+          promises.push(WebRequest.get(`${baseUrl}?${queryArgs}`))
+          if (count > 500) {
+            await sleep(1000);
+          }
+        }
+      }
+    }
+  }
+  return Promise.all(promises)
+  .then(responses => {
+    let count = 0;
+    responses.forEach(response => {
+      count = count+1;
+      if (response.statusCode === 200) {
+        const result = JSON.parse(response.content)
+        console.log(`#${count}: ${result[0].details}`)
+      }
+      else {
+        console.error(`#${count}: ${response.statusCode} ${response.statusMessage} ${response.content}`)
+      }
+    })
+  })
+}
+
+
+
+
 console.log(`Requesting ${configUrl}`)
 console.log(`Batch size: ${configBatchSize}`)
-console.log('Repeating')
 
 ;(async () => {
-  if (configRepeat) {
+  console.log(`configJulia ${configJulia}`)
+
+  if (configJulia) {
+    console.log('Running Julia Series')
+    await doJuliaSeries(configUrl)
+  } else if (configRepeat) {
+    console.log('Repeating')
     while (true) {
       await doBatch(configUrl, configBatchSize)
       await new Promise(resolve => setTimeout(resolve, 1000));
