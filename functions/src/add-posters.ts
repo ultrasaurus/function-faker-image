@@ -13,7 +13,10 @@ const options = commandArgs([
   { name: 'batch-size', alias: 'b', type: Number },
   { name: 'repeat', alias: 'r', type: Boolean },
   { name: 'url', alias: 'u', type: String },
-  { name: 'julia', alias: 'j', type: String }
+  { name: 'julia', alias: 'j', type: String },
+  { name: 'wait', alias: 'w', type: String},    // time to wait in between batches
+  { name: 'start', alias: 's', type: String},
+  { name: 'end', alias: 'e', type: String}
 ])
 
 console.log('options', options);
@@ -22,10 +25,14 @@ if (!configUrl) {
   throw new Error('No url given')
 }
 
+
+const configWaitTime = parseInt(options.wait) || 500
+const configStart = parseInt(options.start) || 0
+
 const configRepeat = options.repeat || false
 const configJulia = options.julia == null || false
 
-const configBatchSize = options['batch-size'] || 1
+const configBatchSize = parseInt(options['batch-size']) || 1
 if (configBatchSize < 0) {
   throw new Error('Batch size must be 1 or greater')
 }
@@ -96,29 +103,35 @@ console.log(`Batch size: ${configBatchSize}`)
   if (configJulia) {
     console.log('Running Julia Series')
     const args = generateJuliaSeriesArgs();
-    console.log(`${args.length} variations`)
-    const totalVariations = 20; //args.length;
-    console.log(`${totalVariations} variations`)
+    console.log(`${args.length} variations total`)
+    const totalVariations = parseInt(options.end || args.length)
     const promises = [];
-    const batchSize = 5;
-    const waitTime = 500;
+    const batchSize = configBatchSize;
+    const waitTime = configWaitTime;
+    console.log(`last variation: ${totalVariations}`)
+    console.log(`batchSize: ${configBatchSize}, waitTime: ${configWaitTime}`)
     let count = 0;
-    for (let i=0; i<totalVariations; i=i+batchSize) {
-      console.log(`push batch ${i}-${i+batchSize-1}`)
-      promises.push(doBatchFromArgs(configUrl, args.slice(i,i+batchSize))
-      .then(responses => {
-        responses.forEach(response => {
-          console.log(`batch ${i}-${i+batchSize-1}`)
-          count = count+1;
-          if (response.statusCode === 200) {
-            const result = JSON.parse(response.content)
-            console.log(`#${count}: ${result[0].details}`)
-          }
-          else {
-            console.error(`#${count}: ${response.statusCode} ${response.statusMessage} ${response.content}`)
-          }
+    for (let i=configStart; i<=totalVariations; i=i+batchSize) {
+      let sliceEnd = i+batchSize;  // slice end is not included in the slice
+      console.log(`i=${i} sliceEnd=${sliceEnd}`)
+      if (sliceEnd > totalVariations) sliceEnd = totalVariations;
+      if (i == sliceEnd) { break; }
+      console.log(`push batch ${i}-${sliceEnd}`)
+      promises.push(
+        doBatchFromArgs(configUrl, args.slice(i, sliceEnd))
+        .then(responses => {
+          responses.forEach(response => {
+            console.log(`batch ${i}-${i+batchSize-1}`)
+            count = count+1;
+            if (response.statusCode === 200) {
+              const result = JSON.parse(response.content)
+              console.log(`#${count}: ${result[0].details}`)
+            }
+            else {
+              console.error(`#${count}: ${response.statusCode} ${response.statusMessage} ${response.content}`)
+            }
+          })
         })
-      })
       )
       await sleep(waitTime);
     }

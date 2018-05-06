@@ -38,3 +38,23 @@ to remove all the data created by addFakePoster
 ./functions/clean.sh -y
 ```
 
+## To create many variations of Julia Set fractal images
+
+The variations are based on a generated series of input parameters,
+so the variations are consistent each time the script is run.
+```
+node lib/add-posters.js -u "https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster" -j
+```
+
+you can also specify
+```
+ -s start at
+ -e end at
+ -b batch size
+ -w wait time (in milliseconds)
+```
+
+For example:
+```
+node lib/add-posters.js -u "https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster" -j -b 4 -s 2 -e 12
+```
