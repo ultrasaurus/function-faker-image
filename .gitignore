@@ -1,7 +1,7 @@
 node_modules/
 firebase-debug.log
 functions/lib/
-functions/serviceAccount.json
+functions/*serviceAccount.json
 functions/twitterCredentials.json
 .vscode
 .firebaserc

@@ -77,15 +77,19 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
       const docRef = itemsColl.doc();
       // Upload to Storage with the same name as the id of the doc to be created
       const storagePath = `images/${docRef.id}.png`;
+      console.log('uploading to:', storagePath);
+
       const uploadOptions = { destination: storagePath };
       const bucket = admin.storage().bucket();
       const files = await bucket.upload(datafile, uploadOptions);
+      console.log('uploaded:', storagePath);
 
       // Generate a public download URL
       const downloadUrl = await files[0].getSignedUrl({
         action: 'read',
         expires: '2099-01-01'
       });
+      console.log('downloadUrl:', downloadUrl);
 
       // Add the doc data
       const docData = {
