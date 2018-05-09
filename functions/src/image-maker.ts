@@ -88,6 +88,7 @@ export class ImageMaker {
 
   public async make(options: any) {
     //console.log('make options', options);
+    const type = options['type'] || 'J';
     const d = parseInt(options['d']) || D;
     const c = parseInt(options['c']) || C;
     const cre = parseFloat(options['cre']) || CRE;
@@ -109,16 +110,26 @@ export class ImageMaker {
     const tempPngConvertPath = path.join(os.tmpdir(), baseName + '.png');
 
     try {
-      // ./fractastic
-      //   J [width] [height]
-      //   [x_min] [x_max] [y_min] [y_max]
-      //   [max_iterations]
-      //   [color_multiplier]
-      //   [c_re] [c_im]
-      //   [d]
-      const fractasticCmd =
-      `J ${IMAGE_WIDTH} ${IMAGE_HEIGHT} ${x_min} ${x_max} ${y_min} ${y_max} 1000 ${c} ${cre} ${cim} ${d}`
+      let fractasticCmd:string;
+      if (type == 'J') {
+        // ./fractastic
+        //   J [width] [height]
+        //   [x_min] [x_max] [y_min] [y_max]
+        //   [max_iterations]
+        //   [color_multiplier]
+        //   [c_re] [c_im]
+        //   [d]
+        fractasticCmd = `J ${IMAGE_WIDTH} ${IMAGE_HEIGHT} ${x_min} ${x_max} ${y_min} ${y_max} 1000 ${c} ${cre} ${cim} ${d}`
+      } else {
+        // ./fractastic M [width] [height]
+        // [x_min] [x_max] [y_min] [y_max]
+        // [max_iterations]
+        // [color_multiplier]
+        // [d]
+        fractasticCmd = `M ${IMAGE_WIDTH} ${IMAGE_HEIGHT} ${x_min} ${x_max} ${y_min} ${y_max} 1000 ${c} ${d}`
+      }
       const fractasticArgs = fractasticCmd.split(' ');
+
       // const fractasticArgs = [
       //   'J', IMAGE_WIDTH, IMAGE_HEIGHT,
       //   '-2', '2', '-2', '2',

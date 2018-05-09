@@ -13,7 +13,7 @@ const options = commandArgs([
   { name: 'batch-size', alias: 'b', type: Number },
   { name: 'repeat', alias: 'r', type: Boolean },
   { name: 'url', alias: 'u', type: String },
-  { name: 'julia', alias: 'j', type: String },
+  { name: 'type', alias: 't', type: String },
   { name: 'wait', alias: 'w', type: String},    // time to wait in between batches
   { name: 'start', alias: 's', type: String},
   { name: 'end', alias: 'e', type: String}
@@ -30,7 +30,7 @@ const configWaitTime = parseInt(options.wait) || 500
 const configStart = parseInt(options.start) || 0
 
 const configRepeat = options.repeat || false
-const configJulia = options.julia == null || false
+const configType = options.type || false
 
 const configBatchSize = parseInt(options['batch-size']) || 1
 if (configBatchSize < 0) {
@@ -73,13 +73,29 @@ function generateJuliaSeriesArgs() {
         for (let shift = 0.0; shift <= 2.6; shift=shift+0.1) {
           const min= MIN + shift*2;
           const max= MAX - shift;
-          args.push(`d=${d}&cre=${cre}&cim=${cim}&c=${c}&x_min=${min}&x_max=${max}&y_min=${min}&y_max=${max}`)
+          args.push(`type=J&d=${d}&cre=${cre}&cim=${cim}&c=${c}&x_min=${min}&x_max=${max}&y_min=${min}&y_max=${max}`)
         }
       }
     }
   }
   return args;
 }
+
+function generateMandelbrotSeriesArgs() {
+  const args=[];
+  for (let c=10; c<=40; c=c+5) {
+    for (let shift = 0.0; shift <= 2.6; shift=shift+0.1) {
+      const min= MIN + shift*2;
+      const max= MAX - shift;
+      for (let d=5; d<=10; d=d+1) {
+        args.push(`type=M&d=${d}&c=${c}&x_min=${min}&x_max=${max}&y_min=${min}&y_max=${max}`)
+      }
+    }
+  }
+  return args;
+}
+
+
 async function doBatchFromArgs(baseUrl: string, queryArgs:Array<string>) {
   const promises: Promise<WebRequest.Response<string>>[] = []
   console.log('queryArgs ', queryArgs)
@@ -98,13 +114,21 @@ console.log(`Requesting ${configUrl}`)
 console.log(`Batch size: ${configBatchSize}`)
 
 ;(async () => {
-  console.log(`configJulia ${configJulia}`)
+  console.log(`configType ${configType}`)
 
-  if (configJulia) {
-    console.log('Running Julia Series')
-    const args = generateJuliaSeriesArgs();
-    console.log(`${args.length} variations total`)
-    const totalVariations = parseInt(options.end || args.length)
+  if (configType) {
+    let args = [];
+    let totalVariations:number;
+    if (configType == 'j') {
+      console.log('Running Julia Series')
+      args = generateJuliaSeriesArgs();
+      console.log(`${args.length} variations total`)
+    } else {
+      console.log('Running Mandelbrot Series')
+      args = generateMandelbrotSeriesArgs();
+      console.log(`${args.length} variations total`)
+    }
+    totalVariations = parseInt(options.end || args.length)
     const promises = [];
     const batchSize = configBatchSize;
     const waitTime = configWaitTime;
@@ -127,6 +151,7 @@ console.log(`Batch size: ${configBatchSize}`)
             if (response.statusCode === 200) {
               const result = JSON.parse(response.content)
               console.log(`#${count}: ${result[0].details}`)
+              console.log(`    ${result[0].url}`)
             }
             else {
               console.error(`#${count}: ${response.statusCode} ${response.statusMessage} ${response.content}`)

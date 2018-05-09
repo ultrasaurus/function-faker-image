@@ -22,7 +22,7 @@ git submodule update --init
 ```
 
 ```
-PROJECT_ID=your-project-id
+export PROJECT_ID=your-project-id
 firebase use --add $PROJECT_ID
 cd functions
 npm install
@@ -57,7 +57,11 @@ you can also specify
 
 For example:
 ```
-node lib/add-posters.js -u "https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster" -j -b 4 -s 2 -e 12
+node lib/add-posters.js -u "https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster" -t j -b 4 -s 2 -e 12
 
-node lib/add-posters.js -u "https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster" -j -b 400 -e 800 -w 1000
+node lib/add-posters.js -u "https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster" -t j -b 400 -e 800 -w 1000
+
+
+node lib/add-posters.js -u https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster -t m -b 4 -s 0 -e 5
+
 ```

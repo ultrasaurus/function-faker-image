@@ -46,6 +46,9 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
   const colorArg = req.query['color'];
   if (colorArg) colors = [colorArg];    // override
 
+  const type = req.query['type'] || 'J';
+  const style = type == 'J' ? "Julia Set" : "Mandelbrot"
+
   let random_message = false;
   let message = req.query['message'];
   let noun = faker.company.bsNoun();
@@ -113,7 +116,7 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
         message: message,
         price: randomPrice(),
         color: color,
-        style: "Julia Set",
+        style: style,
         created: new Date(),
         storagePath: storagePath,
         url: downloadUrl[0],
