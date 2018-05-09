@@ -148,7 +148,7 @@ console.log(`Batch size: ${configBatchSize}`)
         console.log('responses', responses);
       })
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, waitTime));
     } while(configRepeat)
   } else {
   let count = 0;
