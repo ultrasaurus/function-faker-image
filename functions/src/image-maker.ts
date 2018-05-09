@@ -88,7 +88,7 @@ export class ImageMaker {
 
   public async make(options: any) {
     //console.log('make options', options);
-    const type = options['type'] || 'J';
+    const type = options['t'] || 'J';
     const d = parseInt(options['d']) || D;
     const c = parseInt(options['c']) || C;
     const cre = parseFloat(options['cre']) || CRE;

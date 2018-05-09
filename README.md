@@ -65,3 +65,8 @@ node lib/add-posters.js -u "https://us-central1-$PROJECT_ID.cloudfunctions.net/a
 node lib/add-posters.js -u https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster -t m -b 4 -s 0 -e 5
 
 ```
+
+Random poster from Julia Set series
+```
+node lib/add-posters.js -u https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster -r
+```

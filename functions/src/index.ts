@@ -42,6 +42,7 @@ function deleteFiles(files: Array<string>) {
 export const addFakePoster = functions.https.onRequest(async (req, res) => {
   console.log('addFakePoster query', req.query);
 
+  // make one poster
   let colors = "black purple indigo blue navy aquamarine green yellow gold orange red".split(' ')
   const colorArg = req.query['color'];
   if (colorArg) colors = [colorArg];    // override

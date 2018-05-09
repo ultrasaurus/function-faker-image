@@ -151,6 +151,7 @@ console.log(`Batch size: ${configBatchSize}`)
             if (response.statusCode === 200) {
               const result = JSON.parse(response.content)
               console.log(`#${count}: ${result[0].details}`)
+              console.log(`    ${result[0].storagePath}`)
               console.log(`    ${result[0].url}`)
             }
             else {
