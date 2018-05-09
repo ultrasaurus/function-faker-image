@@ -66,7 +66,7 @@ node lib/add-posters.js -u https://us-central1-$PROJECT_ID.cloudfunctions.net/ad
 
 ```
 
-Random poster from Julia Set series
+Random poster from Julia Set series, every 10 seconds
 ```
-node lib/add-posters.js -u https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster -r
+node lib/add-posters.js -u "https://us-central1-$PROJECT_ID.cloudfunctions.net/addFakePoster" -t j -r -w 10000
 ```

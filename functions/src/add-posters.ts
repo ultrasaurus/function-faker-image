@@ -116,66 +116,64 @@ console.log(`Batch size: ${configBatchSize}`)
 ;(async () => {
   console.log(`configType ${configType}`)
 
-  if (configType) {
-    let args = [];
-    let totalVariations:number;
-    if (configType == 'j') {
-      console.log('Running Julia Series')
-      args = generateJuliaSeriesArgs();
-      console.log(`${args.length} variations total`)
-    } else {
-      console.log('Running Mandelbrot Series')
-      args = generateMandelbrotSeriesArgs();
-      console.log(`${args.length} variations total`)
-    }
-    totalVariations = parseInt(options.end || args.length)
-    const promises = [];
-    const batchSize = configBatchSize;
-    const waitTime = configWaitTime;
-    console.log(`last variation: ${totalVariations}`)
-    console.log(`batchSize: ${configBatchSize}, waitTime: ${configWaitTime}`)
-    let count = 0;
-    let errors = 0;
-    for (let i=configStart; i<=totalVariations; i=i+batchSize) {
-      let sliceEnd = i+batchSize;  // slice end is not included in the slice
-      console.log(`i=${i} sliceEnd=${sliceEnd}`)
-      if (sliceEnd > totalVariations) sliceEnd = totalVariations;
-      if (i == sliceEnd) { break; }
-      console.log(`push batch ${i}-${sliceEnd}`)
-      promises.push(
-        doBatchFromArgs(configUrl, args.slice(i, sliceEnd))
-        .then(responses => {
-          responses.forEach(response => {
-            console.log(`batch ${i}-${i+batchSize-1}`)
-            count = count+1;
-            if (response.statusCode === 200) {
-              const result = JSON.parse(response.content)
-              console.log(`#${count}: ${result[0].details}`)
-              console.log(`    ${result[0].storagePath}`)
-              console.log(`    ${result[0].url}`)
-            }
-            else {
-              console.error(`#${count}: ${response.statusCode} ${response.statusMessage} ${response.content}`)
-              errors = errors +1
-            }
-          })
-        })
-      )
-      await sleep(waitTime);
-    }
-    await Promise.all(promises).then(() => {
-      console.log(`All should be complete. ${errors} errors`)
-    })
-
-  } else if (configRepeat) {
+  let args = [];
+  if (configType == 'j') {
+    console.log('Running Julia Series')
+    args = generateJuliaSeriesArgs();
+    console.log(`${args.length} variations total`)
+  } else {
+    console.log('Running Mandelbrot Series')
+    args = generateMandelbrotSeriesArgs();
+    console.log(`${args.length} variations total`)
+  }
+  const allVariations = args.length;
+  const limitVariations = parseInt(options.end || allVariations)
+  const promises = [];
+  const batchSize = configBatchSize;
+  const waitTime = configWaitTime;
+  console.log(`last variation: ${limitVariations}`)
+  console.log(`batchSize: ${configBatchSize}, waitTime: ${configWaitTime}`)
+  if (batchSize == 1) {
     console.log('Repeating')
-    while (true) {
-      await doBatch(configUrl, configBatchSize)
+    do {
+      const randIndex = (Math.floor(Math.random() * allVariations))
+      await doBatchFromArgs(configUrl, args.slice(randIndex, randIndex+1))
+
       await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    } while(configRepeat)
+  } else {
+  let count = 0;
+  let errors = 0;
+  for (let i=configStart; i<=limitVariations; i=i+batchSize) {
+    let sliceEnd = i+batchSize;  // slice end is not included in the slice
+    console.log(`i=${i} sliceEnd=${sliceEnd}`)
+    if (sliceEnd > limitVariations) sliceEnd = limitVariations;
+    if (i == sliceEnd) { break; }
+    console.log(`push batch ${i}-${sliceEnd}`)
+    promises.push(
+      doBatchFromArgs(configUrl, args.slice(i, sliceEnd))
+      .then(responses => {
+        responses.forEach(response => {
+          console.log(`batch ${i}-${i+batchSize-1}`)
+          count = count+1;
+          if (response.statusCode === 200) {
+            const result = JSON.parse(response.content)
+            console.log(`#${count}: ${result[0].details}`)
+            console.log(`    ${result[0].storagePath}`)
+            console.log(`    ${result[0].url}`)
+          }
+          else {
+            console.error(`#${count}: ${response.statusCode} ${response.statusMessage} ${response.content}`)
+            errors = errors +1
+          }
+        })
+      })
+    )
+    await sleep(waitTime);
   }
-  else {
-    await doBatch(configUrl, configBatchSize)
-  }
+  await Promise.all(promises).then(() => {
+    console.log(`All should be complete. ${errors} errors`)
+  })
+}
 })()
 .catch(err => console.error(err))
