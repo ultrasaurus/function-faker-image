@@ -111,6 +111,7 @@ console.log(`Batch size: ${configBatchSize}`)
     console.log(`last variation: ${totalVariations}`)
     console.log(`batchSize: ${configBatchSize}, waitTime: ${configWaitTime}`)
     let count = 0;
+    let errors = 0;
     for (let i=configStart; i<=totalVariations; i=i+batchSize) {
       let sliceEnd = i+batchSize;  // slice end is not included in the slice
       console.log(`i=${i} sliceEnd=${sliceEnd}`)
@@ -129,6 +130,7 @@ console.log(`Batch size: ${configBatchSize}`)
             }
             else {
               console.error(`#${count}: ${response.statusCode} ${response.statusMessage} ${response.content}`)
+              errors = errors +1
             }
           })
         })
@@ -136,7 +138,7 @@ console.log(`Batch size: ${configBatchSize}`)
       await sleep(waitTime);
     }
     await Promise.all(promises).then(() => {
-      console.log('all should be complete.')
+      console.log(`All should be complete. ${errors} errors`)
     })
 
   } else if (configRepeat) {

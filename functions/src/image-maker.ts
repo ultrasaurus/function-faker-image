@@ -160,7 +160,7 @@ export class ImageMaker {
       };
     }
     finally {
-      //console.log(`Deleting ${tempFractasticPath}`)
+      console.log(`Deleting ${tempFractasticPath}`)
       fs.unlinkSync(tempFractasticPath)
     }
   }

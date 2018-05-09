@@ -1,9 +1,10 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import * as fs from 'fs'
-import * as os from 'os'
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import * as faker from 'faker';
-import * as Twitter from 'twitter'
+import * as Twitter from 'twitter';
 import { ImageMaker } from './image-maker';
 import { listAvailableFonts } from './system-info';
 import * as serviceAccount from '../serviceAccount.json';
@@ -26,6 +27,17 @@ export const newImage = functions.https.onRequest(async (request, response) => {
   response.send(result);
 });
 
+function deleteFiles(files: Array<string>) {
+  files.forEach(async f => {
+      try {
+        console.log(`Deleting file: ${f}`);
+        fs.unlinkSync(f);
+      }
+      catch {
+        // ignore errors
+      }
+  })
+}
 
 export const addFakePoster = functions.https.onRequest(async (req, res) => {
   console.log('addFakePoster query', req.query);
@@ -51,16 +63,20 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
   let imageResults: { localPath: string, baseName: string, details: string };
   let posterFile = '';
   let colorizedFile = '';
+  let baseName = '';
+  const tmpFiles = [];
   try {
     const imageMaker = new ImageMaker();
     imageResults = await imageMaker.make(imageOptions);
     console.log('imageMaker.make results:', imageResults);
+    baseName = imageResults.baseName;
     let datafile =  imageResults.localPath;  // reference to the one we're uploading
+    tmpFiles.push(datafile)
     const posterPromises = colors.map(async color => {
-      console.log('color=',color);
       if (color !== 'black') {
-        colorizedFile = await imageMaker.colorize(color, imageResults.localPath, imageResults.baseName);
+        colorizedFile = await imageMaker.colorize(color, imageResults.localPath, baseName);
         datafile = colorizedFile;
+        tmpFiles.push(datafile)
         console.log('colorizedFile:', colorizedFile);
         if (random_message) {
           noun = faker.company.bsNoun();
@@ -71,7 +87,7 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
       }
 
       // posterFile = await imageMaker.addCaption(message,
-      //                                             imageResults.baseName,
+      //                                             baseName,
       //                                             imageResults.localPath);
 
       const docRef = itemsColl.doc();
@@ -108,28 +124,17 @@ export const addFakePoster = functions.https.onRequest(async (req, res) => {
     })
     const results = await Promise.all(posterPromises);
 
+    deleteFiles(tmpFiles);
     res.json(results);
   }
   catch (err) {
     console.error(err)
+    deleteFiles(tmpFiles);
     res.status(500).send(err)
-  }
-  finally {
-    if (imageResults) {
-      console.log(`Deleting image: ${imageResults.localPath}`);
-      fs.unlinkSync(imageResults.localPath);
-    }
-    if (posterFile !== '') {
-      console.log(`Deleting posterFile: ${posterFile}`);
-      fs.unlinkSync(posterFile);
-    }
-    if (colorizedFile !== '') {
-      console.log(`Deleting colorizedFile: ${colorizedFile}`);
-      fs.unlinkSync(colorizedFile);
-    }
   }
 });
 
+/**
 
 exports.tweetNewItems = functions.firestore.document(`disabled/none`).onCreate((snapshot, context) => {
   return null
@@ -174,7 +179,7 @@ async function _tweetNewItems(snapshot: FirebaseFirestore.DocumentSnapshot, cont
     console.error(err);
   }
 }
-
+ */
 
 // list fonts available on the system
 export const listFonts = functions.https.onRequest(async (req, res) => {
@@ -187,3 +192,4 @@ export const listFonts = functions.https.onRequest(async (req, res) => {
     res.status(500).send(e)
   }
 })
+
