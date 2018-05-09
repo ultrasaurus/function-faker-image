@@ -136,8 +136,17 @@ console.log(`Batch size: ${configBatchSize}`)
   if (batchSize == 1) {
     console.log('Repeating')
     do {
+      let colors = "black purple indigo blue navy aquamarine green yellow gold orange red".split(' ')
+      const colorIndex = (Math.floor(Math.random() * 11))
+      const color = colors[colorIndex];
+
       const randIndex = (Math.floor(Math.random() * allVariations))
-      await doBatchFromArgs(configUrl, args.slice(randIndex, randIndex+1))
+      let a = args[randIndex]
+      a = a + `&color=${color}`
+      await doBatchFromArgs(configUrl, [a])
+      .then(responses => {
+        console.log('responses', responses);
+      })
 
       await new Promise(resolve => setTimeout(resolve, 1000));
     } while(configRepeat)
