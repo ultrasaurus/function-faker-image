@@ -18,6 +18,7 @@ Create a Firebase project and:
 ```
 git clone --recurse-submodules git@github.com:ultrasaurus/function-faker-image.git
 cd function-faker-image
+git submodule update --init
 ```
 
 ```
